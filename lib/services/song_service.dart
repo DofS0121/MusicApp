@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/song.dart';
 import '../models/artist_song.dart';
+import '../models/song_info.dart';
 import '../config/api_config.dart';
 
 class SongService {
@@ -23,7 +24,8 @@ class SongService {
   }
 
   Future<List<ArtistSong>> getSongsByArtist(int artistId) async {
-    final url = ApiConfig.songsByArtist(artistId);
+    final url = ApiConfig.songsByArtistV2(artistId);
+    print("🎵 GET SONGS BY ARTIST: $url");
 
     final res = await http.get(Uri.parse(url));
 
@@ -35,6 +37,19 @@ class SongService {
     return data.map((e) => ArtistSong.fromJson(e)).toList();
   }
 
+
+  Future<SongInfo> getSongInfo(int songId) async {
+    final url = ApiConfig.songInfo(songId);
+    print("🎵 GET SONG INFO: $url");
+
+    final res = await http.get(Uri.parse(url));
+
+    if (res.statusCode != 200) {
+      throw Exception("Failed to load song info");
+    }
+
+    return SongInfo.fromJson(jsonDecode(res.body));
+  }
 
 
   Future<void> increaseView(int songId) async {
