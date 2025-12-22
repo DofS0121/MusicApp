@@ -1,35 +1,26 @@
-class Song {
+class SongInfo {
   final int id;
   final String title;
   final String artist;
-  final int artistId;
-  final String audioUrl;
   final String coverUrl;
-  final int duration;
   final DateTime? releaseDate;
   final List<String> categories;
 
-  Song({
+  SongInfo({
     required this.id,
     required this.title,
     required this.artist,
-    required this.artistId,
-    required this.audioUrl,
     required this.coverUrl,
-    required this.duration,
     this.releaseDate,
     this.categories = const [],
   });
 
-  factory Song.fromJson(Map<String, dynamic> json) {
-    return Song(
+  factory SongInfo.fromJson(Map<String, dynamic> json) {
+    return SongInfo(
       id: json['id'],
       title: json['title'],
       artist: json['artist'],
-      artistId: json['artistId'],
-      audioUrl: json['audioUrl'],
       coverUrl: json['coverUrl'],
-      duration: json['duration'],
       releaseDate: json['releaseDate'] != null
           ? DateTime.parse(json['releaseDate'])
           : null,
