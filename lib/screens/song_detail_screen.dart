@@ -4,13 +4,12 @@ import 'package:provider/provider.dart';
 
 import '../models/song.dart';
 import '../models/artist_song.dart';
-import '../models/user_favorite.dart';
 import '../providers/player_provider.dart';
 import '../providers/auth_provider.dart';
-import '../services/favorite_service.dart';
+import '../providers/favorite_provider.dart';
 import '../widgets/player_seek_bar.dart';
 import '../config/api_config.dart';
-import 'artist_tab.dart';
+import 'song_info_tab.dart';
 import 'lyrics_tab.dart';
 
 class SongDetailScreen extends StatefulWidget {
@@ -31,11 +30,11 @@ class SongDetailScreen extends StatefulWidget {
 
 class _SongDetailScreenState extends State<SongDetailScreen> {
   final PageController _pageController = PageController(initialPage: 1);
+  int _currentPage = 1;
 
   @override
   void initState() {
     super.initState();
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<PlayerProvider>().playSong(
         song: widget.song,
@@ -43,6 +42,17 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
         index: widget.index,
       );
     });
+  }
+
+  String get _title {
+    switch (_currentPage) {
+      case 0:
+        return "INFORMATION";
+      case 2:
+        return "LYRICS";
+      default:
+        return "NOW PLAYING";
+    }
   }
 
   String fullUrl(String path) => "${ApiConfig.serverUrl}$path";
@@ -66,46 +76,43 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
     );
   }
 
-  /// ❤️ ADD FAVORITE (LƯU BACKEND)
-  Future<void> _addFavorite(Song song) async {
+  /// ❤️ ADD FAVORITE – QUA FAVORITE PROVIDER
+  Future<void> _addFavorite(int songId) async {
     final auth = context.read<AuthProvider>();
+    final fav = context.read<FavoriteProvider>();
 
-    if (!auth.isAuthenticated) {
+    if (!auth.isAuthenticated ||
+        auth.userId == null ||
+        auth.token == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("⚠️ Vui lòng đăng nhập")),
       );
       return;
     }
 
-    if (song.isFavorite) return;
+    if (fav.isFavorite(songId)) return;
 
     try {
-      await FavoriteService.addFavorite(
-        UserFavorite(
-          userId: auth.userId!,
-          songId: song.id,
-        ),
-        auth.token!,
+      await fav.addFavorite(
+        userId: auth.userId!,
+        songId: songId,
+        token: auth.token!,
       );
-
-      setState(() {
-        song.isFavorite = true;
-      });
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("❤️ Đã thêm vào yêu thích")),
       );
-    } catch (e) {
+    } catch (_) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("❌ Lỗi khi lưu yêu thích")),
+        const SnackBar(content: Text("❌ Lỗi khi thêm yêu thích")),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<PlayerProvider>();
-    final song = provider.currentSong ?? widget.song;
+    final player = context.watch<PlayerProvider>();
+    final song = player.currentSong ?? widget.song;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -113,28 +120,16 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
 
       // ================= APP BAR =================
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
-        title: const Text(
-          "Now Playing",
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
+        backgroundColor: Colors.black.withOpacity(0.55),
+        elevation: 0,
+        title: Text(
+          _title,
+          style: const TextStyle(
             color: Colors.white,
-          ),
-        ),
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.black.withOpacity(0.55),
-                Colors.black.withOpacity(0.15),
-                Colors.transparent,
-              ],
-            ),
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.3,
           ),
         ),
       ),
@@ -142,16 +137,21 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
       // ================= BODY =================
       body: PageView(
         controller: _pageController,
+        onPageChanged: (i) => setState(() => _currentPage = i),
         children: [
-          ArtistTab(
-            song: song,
+          SongInfoTab(
+            songId: song.id,
+            artistId: song.artistId,
             currentSongId: song.id,
             onPlaySong: _playFromArtist,
           ),
-          _buildPlayer(provider, song),
+
+          _buildPlayer(context, song),
+
           LyricsTab(
             songId: song.id,
-            playerService: provider.playerService,
+            coverUrl: song.coverUrl,
+            playerService: player.playerService,
           ),
         ],
       ),
@@ -159,25 +159,34 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
   }
 
   // ================= PLAYER TAB =================
-  Widget _buildPlayer(PlayerProvider provider, Song song) {
+  Widget _buildPlayer(BuildContext context, Song song) {
+    final fav = context.watch<FavoriteProvider>();
+    final isFav = fav.isFavorite(song.id);
+    final player = context.watch<PlayerProvider>();
+
     return Stack(
-      fit: StackFit.expand,
       children: [
         Image.network(
           fullUrl(song.coverUrl),
           fit: BoxFit.cover,
+          width: double.infinity,
         ),
-
         BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 45, sigmaY: 45),
           child: Container(
-            color: Colors.black.withOpacity(0.45),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xAA000000), Color(0x33000000)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
           ),
         ),
 
         Column(
           children: [
-            const SizedBox(height: kToolbarHeight + 24),
+            const SizedBox(height: kToolbarHeight + 40),
 
             ClipOval(
               child: Image.network(
@@ -188,7 +197,7 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
               ),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
             Text(
               song.title,
@@ -198,66 +207,82 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-
             Text(
               song.artist,
               style: const TextStyle(color: Colors.white70),
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
 
-            /// ❤️ FAVORITE BUTTON (ĐÚNG CHỖ KHOANH ĐỎ)
-            IconButton(
-              icon: Icon(
-                song.isFavorite
-                    ? Icons.favorite
-                    : Icons.favorite_border,
-              ),
-              color: song.isFavorite
-                  ? Colors.red
-                  : Colors.white70,
-              iconSize: 28,
-              onPressed: () => _addFavorite(song),
-            ),
+            /// ❤️ FAVORITE BUTTON
+            Consumer<FavoriteProvider>(
+              builder: (_, fav, __) {
+                final isFav = fav.isFavorite(song.id);
 
-            const SizedBox(height: 12),
+                return IconButton(
+                  icon: Icon(
+                    isFav ? Icons.favorite : Icons.favorite_border,
+                  ),
+                  color: isFav ? Colors.redAccent : Colors.white70,
+                  iconSize: 30,
+                  onPressed: () async {
+                    final auth = context.read<AuthProvider>();
+                    if (!auth.isAuthenticated) return;
 
-            StreamBuilder<Duration>(
-              stream: provider.playerService.player.positionStream,
-              builder: (_, snapshot) {
-                return PlayerSeekBar(
-                  position: snapshot.data ?? Duration.zero,
-                  duration:
-                  provider.playerService.duration ?? Duration.zero,
-                  onSeek: provider.playerService.seek,
+                    if (isFav) {
+                      await fav.removeFavorite(
+                        userId: auth.userId!,
+                        songId: song.id,
+                        token: auth.token!,
+                      );
+                    } else {
+                      await fav.addFavorite(
+                        userId: auth.userId!,
+                        songId: song.id,
+                        token: auth.token!,
+                      );
+                    }
+                  },
                 );
               },
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+
+            StreamBuilder<Duration>(
+              stream: player.playerService.player.positionStream,
+              builder: (_, snap) => PlayerSeekBar(
+                position: snap.data ?? Duration.zero,
+                duration:
+                player.playerService.duration ?? Duration.zero,
+                onSeek: player.playerService.seek,
+              ),
+            ),
+
+            const SizedBox(height: 26),
 
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.skip_previous, size: 40),
+                  icon: const Icon(Icons.skip_previous, size: 38),
                   color: Colors.white,
-                  onPressed: provider.prev,
+                  onPressed: player.prev,
                 ),
                 IconButton(
                   icon: Icon(
-                    provider.isPlaying
+                    player.isPlaying
                         ? Icons.pause_circle_filled
                         : Icons.play_circle_filled,
-                    size: 70,
+                    size: 72,
                   ),
-                  color: Colors.white,
-                  onPressed: provider.togglePlay,
+                  color: Colors.deepPurpleAccent,
+                  onPressed: player.togglePlay,
                 ),
                 IconButton(
-                  icon: const Icon(Icons.skip_next, size: 40),
+                  icon: const Icon(Icons.skip_next, size: 38),
                   color: Colors.white,
-                  onPressed: provider.next,
+                  onPressed: player.next,
                 ),
               ],
             ),

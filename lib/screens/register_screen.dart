@@ -12,31 +12,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final emailCtrl = TextEditingController();
   final passCtrl = TextEditingController();
   final nameCtrl = TextEditingController();
-  final authService = AuthService();
   bool loading = false;
 
   Future<void> register() async {
     try {
       setState(() => loading = true);
-
-      final res = await authService.register(
+      await AuthService().register(
         emailCtrl.text.trim(),
         passCtrl.text.trim(),
         nameCtrl.text.trim(),
       );
 
-      if (res == null) {
-        throw Exception("Register failed");
-      }
-
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Register success. Please login.")),
+        const SnackBar(content: Text("Đăng ký thành công")),
       );
-
-      Navigator.pop(context); // quay lại Login
-    } catch (e) {
+      Navigator.pop(context);
+    } catch (_) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
+        const SnackBar(content: Text("Đăng ký thất bại")),
       );
     } finally {
       setState(() => loading = false);
@@ -46,34 +39,63 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Register")),
+      backgroundColor: const Color(0xFF1E1E2C),
+      appBar: AppBar(title: const Text("REGISTER")),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            TextField(
-              controller: nameCtrl,
-              decoration: const InputDecoration(labelText: "Full name"),
-            ),
-            TextField(
-              controller: emailCtrl,
-              decoration: const InputDecoration(labelText: "Email"),
-            ),
-            TextField(
-              controller: passCtrl,
-              decoration: const InputDecoration(labelText: "Password"),
-              obscureText: true,
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: loading ? null : register,
-              child: loading
-                  ? const CircularProgressIndicator()
-                  : const Text("Create account"),
+            const SizedBox(height: 30),
+
+            _field(nameCtrl, "Full name"),
+            const SizedBox(height: 16),
+            _field(emailCtrl, "Email"),
+            const SizedBox(height: 16),
+            _field(passCtrl, "Password", obscure: true),
+
+            const SizedBox(height: 30),
+
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: loading ? null : register,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.greenAccent,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                child: loading
+                    ? const CircularProgressIndicator(color: Colors.black)
+                    : const Text(
+                  "CREATE ACCOUNT",
+                  style: TextStyle(color: Colors.black),
+                ),
+              ),
             ),
           ],
         ),
       ),
     );
   }
+
+  Widget _field(TextEditingController c, String label,
+      {bool obscure = false}) {
+    return TextField(
+      controller: c,
+      obscureText: obscure,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: Colors.white60),
+        enabledBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: Colors.white24),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: Colors.greenAccent),
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
+  }
 }
+

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../providers/favorite_provider.dart';
 
 import '../services/song_service.dart';
 import '../models/song.dart';
@@ -66,7 +67,8 @@ class _SongListScreenState extends State<SongListScreen> {
 
   /// 🚪 LOGOUT
   void _logout() {
-    context.read<AuthProvider>().logout();
+    context.read<AuthProvider>()
+        .logout(context.read<FavoriteProvider>(), context.read<PlayerProvider>());
   }
 
   @override
@@ -76,7 +78,7 @@ class _SongListScreenState extends State<SongListScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF1E1E2C),
       appBar: AppBar(
-        title: const Text("🎵 Songs"),
+        title: const Text("🎵 Songs", style: TextStyle(color: Colors.greenAccent)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [

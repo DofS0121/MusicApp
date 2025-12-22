@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
+import '../providers/favorite_provider.dart';
 import 'login_screen.dart';
 import 'main_screen.dart';
+
 
 class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
@@ -22,8 +24,10 @@ class _AuthGateState extends State<AuthGate> {
   }
 
   Future<void> _checkLogin() async {
-    final auth = Provider.of<AuthProvider>(context, listen: false);
-    await auth.tryAutoLogin();
+    final auth = context.read<AuthProvider>();
+    final favorite = context.read<FavoriteProvider>();
+
+    await auth.tryAutoLogin(favorite);
     setState(() => _loading = false);
   }
 

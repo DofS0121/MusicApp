@@ -4,8 +4,10 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
+import '../providers/favorite_provider.dart';
 import '../services/auth_service.dart';
 import 'auth_gate.dart';
+import '../providers/player_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -43,7 +45,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         updatedUser["avatar"] = avatarUrl;
 
         // 🔥 QUAN TRỌNG: đảm bảo AuthProvider notifyListeners
-        await auth.saveLoginData(auth.token!, updatedUser);
+        await auth.saveLoginData(
+          auth.token!,
+          updatedUser,
+          context.read<FavoriteProvider>(),
+        );
       }
     } catch (e) {
       debugPrint("Upload avatar error: $e");
@@ -53,14 +59,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   /// ================= LOGOUT =================
-  void _logout() {
-    context.read<AuthProvider>().logout();
+  void _logout(BuildContext context) {
+    context.read<AuthProvider>().logout(
+      context.read<FavoriteProvider>(),
+      context.read<PlayerProvider>(),
+    );
 
-    // 🔥 FIX LOGIC: quay về AuthGate (Login)
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => const AuthGate()),
-          (route) => false,
+          (_) => false,
     );
   }
 
@@ -91,7 +99,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF1E1E2C),
       appBar: AppBar(
-        title: const Text("👤 Trang cá nhân"),
+        title: const Text("👤 Trang cá nhân", style: TextStyle(color: Colors.greenAccent)),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
@@ -171,7 +179,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   backgroundColor: Colors.redAccent,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
-                onPressed: _logout,
+                onPressed: () => _logout(context),
               ),
             ),
           ],

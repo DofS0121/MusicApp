@@ -4,8 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/player_provider.dart';
 import '../providers/auth_provider.dart';
-import '../services/favorite_service.dart';
-import '../models/user_favorite.dart';
+import '../providers/favorite_provider.dart';
 import '../config/api_config.dart';
 import '../screens/song_detail_screen.dart';
 
@@ -14,41 +13,39 @@ class MiniPlayer extends StatelessWidget {
 
   String fullUrl(String path) => "${ApiConfig.serverUrl}$path";
 
-  /// ❤️ ADD FAVORITE (CHUNG LOGIC)
-  Future<void> _addFavorite(BuildContext context) async {
+  /// ❤️ ADD FAVORITE – QUA FAVORITE PROVIDER
+  Future<void> _toggleFavorite(BuildContext context) async {
     final auth = context.read<AuthProvider>();
+    final fav = context.read<FavoriteProvider>();
     final player = context.read<PlayerProvider>();
     final song = player.currentSong;
 
     if (song == null) return;
 
-    if (!auth.isAuthenticated) {
+    if (!auth.isAuthenticated ||
+        auth.userId == null ||
+        auth.token == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("⚠️ Vui lòng đăng nhập")),
       );
       return;
     }
 
-    // ⛔ tránh trùng yêu thích
-    if (song.isFavorite) return;
+    // ⛔ đã yêu thích thì không add lại (chưa làm remove)
+    if (fav.isFavorite(song.id)) return;
 
     try {
-      await FavoriteService.addFavorite(
-        UserFavorite(
-          userId: auth.userId!,
-          songId: song.id,
-        ),
-        auth.token!,
+      await fav.addFavorite(
+        userId: auth.userId!,
+        songId: song.id,
+        token: auth.token!,
       );
-
-      // ✅ cập nhật trạng thái dùng chung
-      song.isFavorite = true;
-      player.notifyListeners();
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("❤️ Đã thêm vào yêu thích")),
       );
-    } catch (_) {
+    } catch (e) {
+      debugPrint("❌ ADD FAVORITE ERROR: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("❌ Lỗi khi lưu yêu thích")),
       );
@@ -57,12 +54,13 @@ class MiniPlayer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<PlayerProvider>(
-      builder: (_, player, __) {
+    return Consumer3<PlayerProvider, FavoriteProvider, AuthProvider>(
+      builder: (_, player, fav, auth, __) {
         final song = player.currentSong;
 
-        // ❌ Không có bài → ẩn MiniPlayer
         if (song == null) return const SizedBox();
+
+        final isFavorite = fav.isFavorite(song.id);
 
         return GestureDetector(
           onTap: () {
@@ -131,18 +129,37 @@ class MiniPlayer extends StatelessWidget {
                       ),
                     ),
 
-                    /// ❤️ FAVORITE (TRƯỚC PLAY)
-                    IconButton(
-                      icon: Icon(
-                        song.isFavorite
-                            ? Icons.favorite
-                            : Icons.favorite_border,
-                      ),
-                      color: song.isFavorite
-                          ? Colors.red
-                          : Colors.white70,
-                      iconSize: 22,
-                      onPressed: () => _addFavorite(context),
+                    /// ❤️ FAVORITE (ĐỒNG BỘ)
+                    Consumer<FavoriteProvider>(
+                      builder: (_, fav, __) {
+                        final isFav = fav.isFavorite(song.id);
+
+                        return IconButton(
+                          icon: Icon(
+                            isFav ? Icons.favorite : Icons.favorite_border,
+                          ),
+                          color: isFav ? Colors.red : Colors.white70,
+                          iconSize: 22,
+                          onPressed: () async {
+                            final auth = context.read<AuthProvider>();
+                            if (!auth.isAuthenticated) return;
+
+                            if (isFav) {
+                              await fav.removeFavorite(
+                                userId: auth.userId!,
+                                songId: song.id,
+                                token: auth.token!,
+                              );
+                            } else {
+                              await fav.addFavorite(
+                                userId: auth.userId!,
+                                songId: song.id,
+                                token: auth.token!,
+                              );
+                            }
+                          },
+                        );
+                      },
                     ),
 
                     // ▶️ PLAY / PAUSE

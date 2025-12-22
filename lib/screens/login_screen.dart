@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../providers/auth_provider.dart';
+import '../providers/favorite_provider.dart';
 import 'song_list_screen.dart';
 import 'register_screen.dart';
 import 'main_screen.dart'; // ✅ IMPORT MAIN SCREEN
@@ -16,33 +17,32 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final emailCtrl = TextEditingController();
   final passCtrl = TextEditingController();
-  final authService = AuthService();
-
   bool loading = false;
 
   Future<void> login() async {
     try {
       setState(() => loading = true);
 
-      final res = await authService.login(
+      final res = await AuthService().login(
         emailCtrl.text.trim(),
         passCtrl.text.trim(),
       );
 
-      if (res == null) {
+      if (res == null ||
+          res["token"] == null ||
+          res["user"] == null) {
         throw Exception("Login failed");
       }
 
-      final token = res["token"];
-      final user = res["user"];
+      final token = res["token"] as String;
+      final user = res["user"] as Map<String, dynamic>;
 
-      /// ✅ CHỈ LƯU AUTH STATE
-      await context.read<AuthProvider>()
-          .saveLoginData(token, user);
-
-      /// ❌ KHÔNG NAVIGATOR
-      /// AuthGate sẽ tự chuyển màn hình
-    } catch (e) {
+      await context.read<AuthProvider>().saveLoginData(
+        token,
+        user,
+        context.read<FavoriteProvider>(),
+      );
+    } catch (_) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Email hoặc mật khẩu không đúng")),
       );
@@ -54,27 +54,48 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Login")),
+      backgroundColor: const Color(0xFF1E1E2C),
+      appBar: AppBar(title: const Text("LOGIN")),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           children: [
+            const SizedBox(height: 40),
+
             TextField(
               controller: emailCtrl,
-              decoration: const InputDecoration(labelText: "Email"),
+              style: const TextStyle(color: Colors.white),
+              decoration: _input("Email"),
             ),
+
+            const SizedBox(height: 16),
+
             TextField(
               controller: passCtrl,
-              decoration: const InputDecoration(labelText: "Password"),
               obscureText: true,
+              style: const TextStyle(color: Colors.white),
+              decoration: _input("Password"),
             ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: loading ? null : login,
-              child: loading
-                  ? const CircularProgressIndicator()
-                  : const Text("Login"),
+
+            const SizedBox(height: 30),
+
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: loading ? null : login,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.greenAccent,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                child: loading
+                    ? const CircularProgressIndicator(color: Colors.black)
+                    : const Text(
+                  "LOGIN",
+                  style: TextStyle(color: Colors.black),
+                ),
+              ),
             ),
+
             TextButton(
               onPressed: () {
                 Navigator.push(
@@ -82,10 +103,28 @@ class _LoginScreenState extends State<LoginScreen> {
                   MaterialPageRoute(builder: (_) => const RegisterScreen()),
                 );
               },
-              child: const Text("Create new account"),
+              child: const Text(
+                "Create new account",
+                style: TextStyle(color: Colors.greenAccent),
+              ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  InputDecoration _input(String label) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: const TextStyle(color: Colors.white60),
+      enabledBorder: OutlineInputBorder(
+        borderSide: const BorderSide(color: Colors.white24),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderSide: const BorderSide(color: Colors.greenAccent),
+        borderRadius: BorderRadius.circular(12),
       ),
     );
   }
