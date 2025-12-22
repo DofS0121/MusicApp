@@ -6,9 +6,8 @@ class Song {
   final String audioUrl;
   final String coverUrl;
   final int duration;
-  final DateTime? releaseDate;
-  final List<String> categories;
-
+  int views;
+  bool isFavorite;
   Song({
     required this.id,
     required this.title,
@@ -17,25 +16,30 @@ class Song {
     required this.audioUrl,
     required this.coverUrl,
     required this.duration,
-    this.releaseDate,
-    this.categories = const [],
+    required this.views,
+    this.isFavorite = false,
+
   });
 
   factory Song.fromJson(Map<String, dynamic> json) {
     return Song(
       id: json['id'],
-      title: json['title'],
-      artist: json['artist'],
-      artistId: json['artistId'],
-      audioUrl: json['audioUrl'],
-      coverUrl: json['coverUrl'],
-      duration: json['duration'],
-      releaseDate: json['releaseDate'] != null
-          ? DateTime.parse(json['releaseDate'])
-          : null,
-      categories: json['categories'] != null
-          ? List<String>.from(json['categories'])
-          : [],
+      title: json['title'] ?? '',
+      artist: _parseArtist(json['artist']),
+      artistId: json['artistId'] ?? 0,
+      audioUrl: json['audioUrl'] ?? '',
+      coverUrl: json['coverUrl'] ?? '',
+      duration: json['duration'] ?? 0,
+      views: json['views'] ?? 0,
+      isFavorite: json['isFavorite'] ?? false,
     );
+  }
+
+  /// 🔐 AN TOÀN: xử lý mọi kiểu artist
+  static String _parseArtist(dynamic artist) {
+    if (artist == null) return '';
+    if (artist is String) return artist;
+    if (artist is Map) return artist['name'] ?? '';
+    return '';
   }
 }
