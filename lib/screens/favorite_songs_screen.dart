@@ -1,50 +1,55 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../services/song_service.dart';
 import '../models/song.dart';
-import '../config/api_config.dart';
-import '../providers/player_provider.dart';
 import '../providers/auth_provider.dart';
-import 'song_detail_screen.dart';
+import '../providers/player_provider.dart';
+import '../services/favorite_service.dart';
+import '../screens/song_detail_screen.dart';
 import '../widgets/mini_player.dart';
+import '../config/api_config.dart';
 
-class SongListScreen extends StatefulWidget {
-  const SongListScreen({super.key});
+class FavoriteSongsScreen extends StatefulWidget {
+  const FavoriteSongsScreen({super.key});
 
   @override
-  State<SongListScreen> createState() => _SongListScreenState();
+  FavoriteSongsScreenState createState() => FavoriteSongsScreenState();
 }
 
-class _SongListScreenState extends State<SongListScreen> {
-  final SongService _songService = SongService();
-  late Future<List<Song>> _songsFuture;
+class FavoriteSongsScreenState extends State<FavoriteSongsScreen> {
+  Future<List<Song>>? _favoritesFuture;
+
+  /// 🔁 BẮT BUỘC – để MainScreen gọi reload
+  void reload() {
+    final auth = context.read<AuthProvider>();
+    if (!auth.isAuthenticated) return;
+
+    setState(() {
+      _favoritesFuture = FavoriteService.getFavoritesByUser(
+        auth.userId!,
+        auth.token!,
+      );
+    });
+  }
 
   @override
   void initState() {
     super.initState();
-    _songsFuture = _songService.getSongs();
+    reload();
   }
 
   String fullUrl(String path) {
+    if (path.startsWith('http')) return path;
     return "${ApiConfig.serverUrl}$path";
   }
 
-  /// ▶️ PLAY SONG
-  Future<void> _onPlaySong({
-    required BuildContext context,
+  /// ▶️ PLAY SONG (ĐƠN GIẢN – CHẠY NGAY)
+  void _onPlaySong({
     required Song song,
     required List<Song> playlist,
     required int index,
-  }) async {
+  }) {
     final player = context.read<PlayerProvider>();
-
-    if (player.currentSong?.id != song.id) {
-      try {
-        final newViews = await _songService.increaseView(song.id);
-        setState(() => song.views = newViews);
-      } catch (_) {}
-    }
 
     player.playSong(
       song: song,
@@ -64,31 +69,31 @@ class _SongListScreenState extends State<SongListScreen> {
     );
   }
 
-  /// 🚪 LOGOUT
-  void _logout() {
-    context.read<AuthProvider>().logout();
-  }
-
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
 
+    if (!auth.isAuthenticated) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF1E1E2C),
+        body: Center(
+          child: Text(
+            "Vui lòng đăng nhập",
+            style: TextStyle(color: Colors.white70),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFF1E1E2C),
       appBar: AppBar(
-        title: const Text("🎵 Songs"),
+        title: const Text("❤️ Bài hát yêu thích"),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        actions: [
-          if (auth.isAuthenticated)
-            IconButton(
-              icon: const Icon(Icons.logout),
-              onPressed: _logout,
-            ),
-        ],
       ),
       body: FutureBuilder<List<Song>>(
-        future: _songsFuture,
+        future: _favoritesFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -108,7 +113,7 @@ class _SongListScreenState extends State<SongListScreen> {
           if (songs.isEmpty) {
             return const Center(
               child: Text(
-                "No songs found",
+                "Chưa có bài hát yêu thích",
                 style: TextStyle(color: Colors.white70),
               ),
             );
@@ -124,7 +129,6 @@ class _SongListScreenState extends State<SongListScreen> {
 
                   return GestureDetector(
                     onTap: () => _onPlaySong(
-                      context: context,
                       song: song,
                       playlist: songs,
                       index: index,
@@ -138,7 +142,6 @@ class _SongListScreenState extends State<SongListScreen> {
                       ),
                       child: Row(
                         children: [
-                          /// 🎧 COVER
                           ClipRRect(
                             borderRadius: BorderRadius.circular(12),
                             child: Image.network(
@@ -151,8 +154,6 @@ class _SongListScreenState extends State<SongListScreen> {
                             ),
                           ),
                           const SizedBox(width: 12),
-
-                          /// 🎼 INFO
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -173,14 +174,11 @@ class _SongListScreenState extends State<SongListScreen> {
                                 ),
                                 Text(
                                   "${song.views} lượt nghe",
-                                  style:
-                                  const TextStyle(color: Colors.white38),
+                                  style: const TextStyle(color: Colors.white38),
                                 ),
                               ],
                             ),
                           ),
-
-                          /// ▶️ PLAY ICON
                           const Icon(
                             Icons.play_circle_fill,
                             color: Colors.white70,
@@ -193,7 +191,6 @@ class _SongListScreenState extends State<SongListScreen> {
                 },
               ),
 
-              /// 🔥 MINI PLAYER
               const Positioned(
                 left: 0,
                 right: 0,

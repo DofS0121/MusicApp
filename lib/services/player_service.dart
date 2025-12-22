@@ -23,4 +23,9 @@ class PlayerService {
 
   Future<void> pause() => _player.pause();
   Future<void> seek(Duration d) => _player.seek(d);
+
+  void stop() {
+    _player.stop();
+    _player.seek(Duration.zero);
+  }
 }

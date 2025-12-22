@@ -2,17 +2,14 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../services/player_service.dart';
 import '../services/lyrics_service.dart';
-import '../config/api_config.dart';
 
 class LyricsTab extends StatefulWidget {
   final int songId;
-  final String coverUrl;
   final PlayerService playerService;
 
   const LyricsTab({
     super.key,
     required this.songId,
-    required this.coverUrl,
     required this.playerService,
   });
 
@@ -22,8 +19,12 @@ class LyricsTab extends StatefulWidget {
 
 class _LyricsTabState extends State<LyricsTab> {
   final lyricsService = LyricsService();
+  final ScrollController _scrollController =
+  ScrollController();
+
   List<Map<String, dynamic>> lyrics = [];
-  int currentIndex = -1;
+  int _currentIndex = -1;
+  static const double lineHeight = 44;
 
   @override
   void initState() {
@@ -32,45 +33,61 @@ class _LyricsTabState extends State<LyricsTab> {
   }
 
   Future<void> loadLyrics() async {
-    lyrics = await lyricsService.getLyricsBySong(widget.songId);
+    lyrics = await lyricsService
+        .getLyricsBySong(widget.songId);
     setState(() {});
   }
 
-  String fullUrl(String p) => "${ApiConfig.serverUrl}$p";
+  void _scrollTo(int index) {
+    _scrollController.animateTo(
+      index * lineHeight,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Image.network(fullUrl(widget.coverUrl),
-            fit: BoxFit.cover, width: double.infinity),
-        BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 45, sigmaY: 45),
-          child: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xAA000000), Color(0x33000000)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
-          ),
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF6A1B9A), Color(0xFF1E1E2C)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
         ),
-        StreamBuilder<Duration>(
-          stream: widget.playerService.player.positionStream,
-          builder: (_, snap) {
-            final sec = snap.data?.inSeconds ?? 0;
-            for (int i = 0; i < lyrics.length; i++) {
-              if (sec >= lyrics[i]['time']) currentIndex = i;
-            }
+      ),
+      child: StreamBuilder<Duration>(
+        stream: widget.playerService.player.positionStream,
+        builder: (_, snapshot) {
+          final sec = snapshot.data?.inSeconds ?? 0;
 
-            return ListView.builder(
-              padding: const EdgeInsets.fromLTRB(24, 120, 24, 32),
-              itemCount: lyrics.length,
-              itemBuilder: (_, i) {
-                final active = i == currentIndex;
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
+          for (int i = 0; i < lyrics.length; i++) {
+            final start = lyrics[i]['time'];
+            final end = i + 1 < lyrics.length
+                ? lyrics[i + 1]['time']
+                : 99999;
+
+            if (sec >= start &&
+                sec < end &&
+                _currentIndex != i) {
+              _currentIndex = i;
+              WidgetsBinding.instance
+                  .addPostFrameCallback(
+                      (_) => _scrollTo(i));
+              break;
+            }
+          }
+
+          return ListView.builder(
+            controller: _scrollController,
+            padding: const EdgeInsets.all(24),
+            itemCount: lyrics.length,
+            itemBuilder: (_, i) {
+              final active = i == _currentIndex;
+
+              return SizedBox(
+                height: lineHeight,
+                child: Center(
                   child: Text(
                     lyrics[i]['text'],
                     textAlign: TextAlign.center,
@@ -79,16 +96,17 @@ class _LyricsTabState extends State<LyricsTab> {
                           ? Colors.yellowAccent
                           : Colors.white54,
                       fontSize: active ? 22 : 16,
-                      fontWeight:
-                      active ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: active
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                     ),
                   ),
-                );
-              },
-            );
-          },
-        ),
-      ],
+                ),
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }

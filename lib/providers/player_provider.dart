@@ -65,4 +65,15 @@ class PlayerProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  // ================= ❌ STOP =================
+  void stop() {
+    _playerService.stop();     // dừng audio
+    _currentSong = null;       // xoá bài hiện tại
+    _playlist = [];
+    _currentIndex = 0;
+
+    notifyListeners();         // MiniPlayer tự ẩn
+  }
 }
+
