@@ -28,4 +28,5 @@ class PlayerService {
     _player.stop();
     _player.seek(Duration.zero);
   }
+
 }

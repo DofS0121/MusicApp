@@ -44,6 +44,9 @@ class ApiConfig {
   // ================= SONGS =================
   static const String songs = "$baseUrl/songs";
 
+  static String songInfo(int id) =>
+      "$baseUrl/songs/$id";
+
   static String songDetail(int id) =>
       "$baseUrl/songs/$id";
 
@@ -68,6 +71,8 @@ class ApiConfig {
 
   static String getFavoritesByUser(int userId) =>
       "$baseUrl/favorites/$userId";
+
+  static const String removeFavorite = "$baseUrl/favorites";
 
   // ================= LYRICS =================
   static String lyricsBySong(int songId) =>
