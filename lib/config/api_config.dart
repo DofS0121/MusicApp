@@ -77,4 +77,10 @@ class ApiConfig {
   // ================= LYRICS =================
   static String lyricsBySong(int songId) =>
       "$baseUrl/lyrics/song/$songId";
+
+
+  // ================= CHART =================
+  static String getChart(String type) =>
+      "$baseUrl/charts/$type";
+
 }

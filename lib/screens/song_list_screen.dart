@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/favorite_provider.dart';
-
 import '../services/song_service.dart';
 import '../models/song.dart';
 import '../config/api_config.dart';
@@ -27,17 +26,9 @@ class _SongListScreenState extends State<SongListScreen> {
     _songsFuture = _songService.getSongs();
   }
 
-  String fullUrl(String path) {
-    return "${ApiConfig.serverUrl}$path";
-  }
+  String fullUrl(String path) => "${ApiConfig.serverUrl}$path";
 
-  /// ▶️ PLAY SONG
-  Future<void> _onPlaySong({
-    required BuildContext context,
-    required Song song,
-    required List<Song> playlist,
-    required int index,
-  }) async {
+  Future<void> _onPlaySong(BuildContext context, Song song, List<Song> playlist, int index) async {
     final player = context.read<PlayerProvider>();
 
     if (player.currentSong?.id != song.id) {
@@ -47,165 +38,140 @@ class _SongListScreenState extends State<SongListScreen> {
       } catch (_) {}
     }
 
-    player.playSong(
-      song: song,
-      playlist: playlist,
-      index: index,
-    );
-
+    player.playSong(song: song, playlist: playlist, index: index);
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => SongDetailScreen(
-          song: song,
-          playlist: playlist,
-          index: index,
-        ),
+        builder: (_) => SongDetailScreen(song: song, playlist: playlist, index: index),
       ),
     );
-  }
-
-  /// 🚪 LOGOUT
-  void _logout() {
-    context.read<AuthProvider>()
-        .logout(context.read<FavoriteProvider>(), context.read<PlayerProvider>());
   }
 
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    final fav = context.watch<FavoriteProvider>();
 
     return Scaffold(
       backgroundColor: const Color(0xFF1E1E2C),
       appBar: AppBar(
-        title: const Text("🎵 Songs", style: TextStyle(color: Colors.greenAccent)),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        centerTitle: false,
+        title: const Text(
+          "🎧 Tất cả bài hát",
+          style: TextStyle(
+            color: Colors.greenAccent,
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+          ),
+        ),
         actions: [
           if (auth.isAuthenticated)
             IconButton(
-              icon: const Icon(Icons.logout),
-              onPressed: _logout,
+              icon: const Icon(Icons.logout, color: Colors.white70),
+              onPressed: () => auth.logout(fav, context.read<PlayerProvider>()),
             ),
         ],
       ),
+
       body: FutureBuilder<List<Song>>(
         future: _songsFuture,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator(color: Colors.greenAccent));
           }
 
-          if (snapshot.hasError) {
-            return Center(
-              child: Text(
-                snapshot.error.toString(),
-                style: const TextStyle(color: Colors.white),
-              ),
-            );
-          }
-
-          final songs = snapshot.data ?? [];
+          final songs = snapshot.data!;
+          final player = context.read<PlayerProvider>();
 
           if (songs.isEmpty) {
             return const Center(
-              child: Text(
-                "No songs found",
-                style: TextStyle(color: Colors.white70),
-              ),
+              child: Text("Không có bài hát nào", style: TextStyle(color: Colors.white70)),
             );
           }
 
-          return Stack(
-            children: [
-              ListView.builder(
-                padding: const EdgeInsets.fromLTRB(12, 12, 12, 90),
-                itemCount: songs.length,
-                itemBuilder: (context, index) {
-                  final song = songs[index];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 80),
+            child: ListView.separated(
+              padding: const EdgeInsets.all(14),
+              itemCount: songs.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 10),
+              itemBuilder: (_, i) {
+                final song = songs[i];
+                final isFav = fav.isFavorite(song.id);
+                final isPlaying = player.currentSong?.id == song.id;
 
-                  return GestureDetector(
-                    onTap: () => _onPlaySong(
-                      context: context,
-                      song: song,
-                      playlist: songs,
-                      index: index,
+                return InkWell(
+                  borderRadius: BorderRadius.circular(18),
+                  onTap: () => _onPlaySong(context, song, songs, i),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(18),
+                      color: isPlaying
+                          ? Colors.greenAccent.withOpacity(0.12)
+                          : Colors.white.withOpacity(0.05),
                     ),
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(vertical: 8),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Row(
-                        children: [
-                          /// 🎧 COVER
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.network(
-                              fullUrl(song.coverUrl),
-                              width: 60,
-                              height: 60,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) =>
-                              const Icon(Icons.music_note),
-                            ),
+                    child: Row(
+                      children: [
+                        /// COVER
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(
+                            fullUrl(song.coverUrl),
+                            width: 65,
+                            height: 65,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                            const Icon(Icons.music_note, size: 50, color: Colors.white54),
                           ),
-                          const SizedBox(width: 12),
+                        ),
 
-                          /// 🎼 INFO
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  song.title,
+                        const SizedBox(width: 14),
+
+                        /// INFO
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(song.title,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
                                     color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w700,
+                                  )),
+                              Text(song.artist,
+                                  style: const TextStyle(
+                                    color: Colors.white60,
+                                    fontSize: 14,
+                                  )),
+                              Text(
+                                "${song.views} lượt nghe",
+                                style: TextStyle(
+                                  color: Colors.white24,
+                                  fontSize: 12,
                                 ),
-                                Text(
-                                  song.artist,
-                                  style: const TextStyle(color: Colors.white60),
-                                ),
-                                Text(
-                                  "${song.views} lượt nghe",
-                                  style:
-                                  const TextStyle(color: Colors.white38),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
+                        ),
 
-                          /// ▶️ PLAY ICON
-                          const Icon(
-                            Icons.play_circle_fill,
-                            color: Colors.white70,
-                            size: 36,
-                          ),
-                        ],
-                      ),
+                        /// PLAY
+                        const Icon(Icons.play_circle_fill, color: Colors.greenAccent, size: 36),
+                      ],
                     ),
-                  );
-                },
-              ),
-
-              /// 🔥 MINI PLAYER
-              const Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: MiniPlayer(),
-              ),
-            ],
+                  ),
+                );
+              },
+            ),
           );
         },
       ),
+
+      bottomNavigationBar: const MiniPlayer(),
     );
   }
 }

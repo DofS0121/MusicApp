@@ -1,8 +1,9 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../config/api_config.dart';
 import '../services/player_service.dart';
 import '../services/lyrics_service.dart';
-import '../config/api_config.dart';
 
 class LyricsTab extends StatefulWidget {
   final int songId;
@@ -24,14 +25,15 @@ class _LyricsTabState extends State<LyricsTab> {
   final lyricsService = LyricsService();
   List<Map<String, dynamic>> lyrics = [];
   int currentIndex = -1;
+  final controller = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    loadLyrics();
+    load();
   }
 
-  Future<void> loadLyrics() async {
+  Future<void> load() async {
     lyrics = await lyricsService.getLyricsBySong(widget.songId);
     setState(() {});
   }
@@ -42,20 +44,19 @@ class _LyricsTabState extends State<LyricsTab> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        Image.network(fullUrl(widget.coverUrl),
-            fit: BoxFit.cover, width: double.infinity),
+        Image.network(
+          fullUrl(widget.coverUrl),
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
+        ),
         BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 45, sigmaY: 45),
           child: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xAA000000), Color(0x33000000)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
+            color: Colors.black.withOpacity(.3),
           ),
         ),
+
         StreamBuilder<Duration>(
           stream: widget.playerService.player.positionStream,
           builder: (_, snap) {
@@ -64,23 +65,36 @@ class _LyricsTabState extends State<LyricsTab> {
               if (sec >= lyrics[i]['time']) currentIndex = i;
             }
 
+            /// Auto scroll to current
+            if (controller.hasClients && currentIndex > 0) {
+              controller.animateTo(
+                (currentIndex * 60).toDouble(),
+                duration: const Duration(milliseconds: 350),
+                curve: Curves.easeOut,
+              );
+            }
+
             return ListView.builder(
-              padding: const EdgeInsets.fromLTRB(24, 120, 24, 32),
+              controller: controller,
+              padding: const EdgeInsets.fromLTRB(24, 140, 24, 100),
               itemCount: lyrics.length,
               itemBuilder: (_, i) {
                 final active = i == currentIndex;
-                return Padding(
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  alignment: Alignment.center,
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   child: Text(
                     lyrics[i]['text'],
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: active
-                          ? Colors.yellowAccent
-                          : Colors.white54,
+                    style: GoogleFonts.inter(
                       fontSize: active ? 22 : 16,
-                      fontWeight:
-                      active ? FontWeight.bold : FontWeight.normal,
+                      height: 1.4,
+                      fontWeight: active ? FontWeight.bold : FontWeight.normal,
+                      color: active ? Colors.yellowAccent : Colors.white54,
+                      shadows: active
+                          ? [Shadow(color: Colors.yellowAccent, blurRadius: 20)]
+                          : null,
                     ),
                   ),
                 );

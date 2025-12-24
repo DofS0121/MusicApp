@@ -83,5 +83,14 @@ class PlayerProvider extends ChangeNotifier {
     _currentSong = null;
     notifyListeners();
   }
+
+  void updateSongView(int songId, int views) {
+    final idx = playlist.indexWhere((s) => s.id == songId);
+    if (idx != -1) {
+      playlist[idx].views = views;
+      notifyListeners();
+    }
+  }
+
 }
 
