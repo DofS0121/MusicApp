@@ -135,8 +135,8 @@ class _SongInfoTabState extends State<SongInfoTab> {
 
                     const SizedBox(height: 28),
 
-                    const Text(
-                      "Bài hát của ca sĩ",
+                    Text(
+                      "Bài hát của ${song.artist}",
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 18,

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'song_list_screen.dart';
 import 'favorite_songs_screen.dart';
 import 'profile_screen.dart';
+import 'chart_screen.dart';
+
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -22,7 +24,7 @@ class _MainScreenState extends State<MainScreen> {
     _screens = const [
       SongListScreen(),        // 🏠 Trang chủ
       FavoriteSongsScreen(),   // ❤️ Yêu thích
-      Placeholder(),           // 📊 BXH
+      ChartScreen(),        // 📊 BXH
       ProfileScreen(),         // 👤 Cá nhân
     ];
   }
