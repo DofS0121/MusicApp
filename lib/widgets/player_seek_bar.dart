@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/player_provider.dart';
 
 class PlayerSeekBar extends StatefulWidget {
   final Duration position;
@@ -27,26 +29,35 @@ class _PlayerSeekBarState extends State<PlayerSeekBar> {
         ? _dragValue
         : widget.position.inSeconds.clamp(0, max).toDouble();
 
+    // 🚨 AUTO NEXT
+    if (!_dragging &&
+        widget.duration.inSeconds > 0 &&
+        widget.position >= widget.duration) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.read<PlayerProvider>().next();
+      });
+    }
+
     return Column(
       children: [
         Slider(
           min: 0,
           max: max > 0 ? max : 1,
           value: value,
+          activeColor: Colors.greenAccent,
+          inactiveColor: Colors.white38,
           onChangeStart: (v) {
             _dragging = true;
             _dragValue = v;
           },
-          onChanged: (v) {
-            setState(() => _dragValue = v);
-          },
+          onChanged: (v) => setState(() => _dragValue = v),
           onChangeEnd: (v) {
             _dragging = false;
             widget.onSeek(Duration(seconds: v.toInt()));
           },
         ),
 
-        // ⏱ Time label (giống Zing MP3)
+        /// TIME LABELS
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(

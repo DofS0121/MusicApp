@@ -10,32 +10,41 @@ class PlayerProvider extends ChangeNotifier {
   List<Song> _playlist = [];
   int _currentIndex = 0;
 
-  // ================= GETTERS =================
   Song? get currentSong => _currentSong;
   List<Song> get playlist => _playlist;
   int get currentIndex => _currentIndex;
-  PlayerService get playerService => _playerService;
   bool get isPlaying => _playerService.isPlaying;
+  PlayerService get playerService => _playerService;
 
-  // ================= PRIVATE =================
-  String _fullUrl(String path) {
-    if (path.startsWith("http")) return path;
-    return "${ApiConfig.serverUrl}$path";
+  // ====================== LOOP & SHUFFLE ======================
+  bool _shuffle = false;
+  int _loopMode = 1; // 0: off, 1: all, 2: one
+
+  bool get isShuffle => _shuffle;
+  int get loopMode => _loopMode;
+
+  void toggleShuffle() {
+    _shuffle = !_shuffle;
+    notifyListeners();
   }
 
-  // ================= ACTIONS =================
-  void playSong({
-    required Song song,
-    required List<Song> playlist,
-    required int index,
-  }) {
-    _currentSong = song;
+  void toggleLoopMode() {
+    _loopMode = (_loopMode + 1) % 3;
+    notifyListeners();
+  }
+
+  // ====================== UTIL ======================
+  String _fullUrl(String path) {
+    return path.startsWith("http") ? path : "${ApiConfig.serverUrl}$path";
+  }
+
+  // ====================== MAIN CONTROLS ======================
+  void playSong({required Song song, required List<Song> playlist, required int index}) {
     _playlist = playlist;
+    _currentSong = song;
     _currentIndex = index;
 
-    final url = _fullUrl(song.audioUrl);
-    _playerService.play(url);
-
+    _playerService.play(_fullUrl(song.audioUrl));
     notifyListeners();
   }
 
@@ -48,36 +57,63 @@ class PlayerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ====================== NEXT ======================
   void next() {
-    if (_currentIndex < _playlist.length - 1) {
-      _currentIndex++;
+    if (_playlist.isEmpty) return;
+
+    if (_loopMode == 2) {
+      _playerService.play(_fullUrl(_currentSong!.audioUrl));
+    } else if (_shuffle) {
+      _currentIndex = _pickRandomIndex();
       _currentSong = _playlist[_currentIndex];
       _playerService.play(_fullUrl(_currentSong!.audioUrl));
-      notifyListeners();
+    } else {
+      if (_currentIndex < _playlist.length - 1) {
+        _currentIndex++;
+      } else if (_loopMode == 1) {
+        _currentIndex = 0;
+      } else {
+        stop();
+        return;
+      }
+      _currentSong = _playlist[_currentIndex];
+      _playerService.play(_fullUrl(_currentSong!.audioUrl));
     }
+    notifyListeners();
   }
 
+  int _pickRandomIndex() {
+    final available = List<int>.generate(_playlist.length, (i) => i)
+      ..remove(_currentIndex);
+    available.shuffle();
+    return available.first;
+  }
+
+  // ====================== PREV ======================
   void prev() {
+    if (_playlist.isEmpty) return;
+
     if (_currentIndex > 0) {
       _currentIndex--;
-      _currentSong = _playlist[_currentIndex];
-      _playerService.play(_fullUrl(_currentSong!.audioUrl));
-      notifyListeners();
+    } else if (_loopMode == 1) {
+      _currentIndex = _playlist.length - 1;
     }
+
+    _currentSong = _playlist[_currentIndex];
+    _playerService.play(_fullUrl(_currentSong!.audioUrl));
+    notifyListeners();
   }
 
-  // ================= ❌ STOP =================
+  // ====================== STOP ======================
   void stop() {
-    _playerService.stop();     // dừng audio
-    _currentSong = null;       // xoá bài hiện tại
+    _playerService.stop();
+    _currentSong = null;
     _playlist = [];
     _currentIndex = 0;
-
-    notifyListeners();         // MiniPlayer tự ẩn
+    notifyListeners();
   }
-
   void stopAndReset() {
-    playerService.stop();   // ⛔ stop audio
+    _playerService.stop();
     _playlist = [];
     _currentIndex = 0;
     _currentSong = null;
@@ -91,6 +127,4 @@ class PlayerProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
-
 }
-

@@ -25,7 +25,7 @@ class Song {
     return Song(
       id: json['id'],
       title: json['title'] ?? '',
-      artist: _parseArtist(json['artist']),
+      artist: _parseArtist(json['artist'] ?? json['artistName'] ?? ''),
       artistId: json['artistId'] ?? 0,
       audioUrl: json['audioUrl'] ?? '',
       coverUrl: json['coverUrl'] ?? '',

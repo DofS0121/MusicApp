@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -23,49 +22,36 @@ class _FavoriteSongsScreenState extends State<FavoriteSongsScreen> {
   @override
   void initState() {
     super.initState();
-    _ensureFavoritesLoaded();
+    _loadFavorites();
   }
 
-  Future<void> _ensureFavoritesLoaded() async {
+  Future<void> _loadFavorites() async {
     final auth = context.read<AuthProvider>();
-    final favoriteProvider = context.read<FavoriteProvider>();
+    final fav = context.read<FavoriteProvider>();
 
     if (!auth.isAuthenticated) {
       setState(() => _loading = false);
       return;
     }
 
-    /// 🔥 QUAN TRỌNG: nếu ids đang rỗng → load lại
-    if (favoriteProvider.ids.isEmpty) {
-      await favoriteProvider.loadFavorites(
-        userId: auth.userId!,
-        token: auth.token!,
-      );
-    }
+    await fav.loadFavorites(
+      userId: auth.userId!,
+      token: auth.token!,
+    );
 
-    if (mounted) {
-      setState(() => _loading = false);
-    }
+    if (mounted) setState(() => _loading = false);
   }
 
-  String fullUrl(String path) {
-    if (path.startsWith('http')) return path;
-    return "${ApiConfig.serverUrl}$path";
-  }
+  String fullUrl(String path) =>
+      path.startsWith('http') ? path : "${ApiConfig.serverUrl}$path";
 
-  void _onPlaySong({
-    required BuildContext context,
+  void _playSong({
     required Song song,
     required List<Song> playlist,
     required int index,
   }) {
     final player = context.read<PlayerProvider>();
-
-    player.playSong(
-      song: song,
-      playlist: playlist,
-      index: index,
-    );
+    player.playSong(song: song, playlist: playlist, index: index);
 
     Navigator.push(
       context,
@@ -82,205 +68,152 @@ class _FavoriteSongsScreenState extends State<FavoriteSongsScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-    final favoriteProvider = context.watch<FavoriteProvider>();
-    final playerProvider = context.read<PlayerProvider>();
+    final fav = context.watch<FavoriteProvider>();
+    final songs = fav.songs;
 
-    /// ❌ CHƯA LOGIN
+    // 🚫 Chưa đăng nhập
     if (!auth.isAuthenticated) {
       return const Scaffold(
         backgroundColor: Color(0xFF1E1E2C),
         body: Center(
-          child: Text(
-            "Vui lòng đăng nhập",
-            style: TextStyle(color: Colors.white70),
-          ),
+          child: Text("Vui lòng đăng nhập", style: TextStyle(color: Colors.white70)),
         ),
       );
     }
 
-    /// ⏳ ĐANG LOAD FAVORITES
+    // 🔄 Loading
     if (_loading) {
       return const Scaffold(
         backgroundColor: Color(0xFF1E1E2C),
         body: Center(
-          child: CircularProgressIndicator(color: Colors.white),
+          child: CircularProgressIndicator(color: Colors.greenAccent),
         ),
       );
     }
 
-    final favoriteIds = favoriteProvider.ids;
-
-    /// ❗️KHÔNG CÓ FAVORITE
-    if (favoriteIds.isEmpty) {
+    // ❌ Không có bài hát
+    if (songs.isEmpty) {
       return Scaffold(
         backgroundColor: const Color(0xFF1E1E2C),
         appBar: AppBar(
           backgroundColor: Colors.transparent,
-          elevation: 0,
-          iconTheme: const IconThemeData(color: Colors.white),
-          title: const Text(
-            "❤️ Bài hát yêu thích",
-            style: TextStyle(color: Colors.green),
-          ),
+          title: const Text("❤️ Bài hát yêu thích",
+              style: TextStyle(color: Colors.greenAccent)),
         ),
         body: const Center(
-          child: Text(
-            "Chưa có bài hát yêu thích",
-            style: TextStyle(color: Colors.white70),
-          ),
+          child: Text("Chưa có bài hát yêu thích",
+              style: TextStyle(color: Colors.white70)),
         ),
       );
     }
-
-    /// 🔥 LẤY BÀI HÁT YÊU THÍCH TỪ PLAYLIST
-    final favoriteSongs = playerProvider.playlist
-        .where((s) => favoriteIds.contains(s.id))
-        .toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFF1E1E2C),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.greenAccent),
         title: const Text(
           "❤️ Bài hát yêu thích",
-          style: TextStyle(color: Colors.greenAccent),
+          style: TextStyle(
+            color: Colors.greenAccent,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
-      body: Stack(
-        children: [
-          ListView.builder(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 90),
-            itemCount: favoriteSongs.length,
-            itemBuilder: (context, index) {
-              final song = favoriteSongs[index];
 
-              return Dismissible(
-                key: ValueKey(song.id),
-                direction: DismissDirection.endToStart,
-                background: Container(
-                  alignment: Alignment.centerRight,
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  decoration: BoxDecoration(
-                    color: Colors.redAccent,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Icon(Icons.delete, color: Colors.white, size: 28),
-                ),
-                confirmDismiss: (_) async {
-                  return await showDialog<bool>(
-                    context: context,
-                    builder: (_) => AlertDialog(
-                      backgroundColor: const Color(0xFF2A2A3D),
-                      title: const Text(
-                        "Xóa yêu thích",
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      content: Text(
-                        "Bạn muốn xóa \"${song.title}\" khỏi danh sách yêu thích?",
-                        style: const TextStyle(color: Colors.white70),
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text(
-                            "Hủy",
-                            style: TextStyle(color: Colors.white70),
-                          ),
-                        ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.redAccent,
-                          ),
-                          onPressed: () => Navigator.pop(context, true),
-                          child: const Text("Xóa"),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-                onDismissed: (_) async {
-                  await favoriteProvider.removeFavorite(
-                    userId: auth.userId!,
-                    songId: song.id,
-                    token: auth.token!,
-                  );
+      body: ListView.separated(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 90),
+        separatorBuilder: (_, __) => const SizedBox(height: 10),
+        itemCount: songs.length,
+        itemBuilder: (context, index) {
+          final s = songs[index];
 
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text("💔 Đã xóa ${song.title} khỏi yêu thích"),
+          return GestureDetector(
+            onTap: () => _playSong(
+              song: s,
+              playlist: songs,
+              index: index,
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                color: Colors.white.withOpacity(0.06),
+              ),
+              child: Row(
+                children: [
+                  // 🎵 Cover
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      fullUrl(s.coverUrl),
+                      width: 65,
+                      height: 65,
+                      fit: BoxFit.cover,
                     ),
-                  );
-                },
-                child: GestureDetector(
-                  onTap: () => _onPlaySong(
-                    context: context,
-                    song: song,
-                    playlist: favoriteSongs,
-                    index: index,
                   ),
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 8),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
+                  const SizedBox(width: 14),
+
+                  // 📌 Info
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.network(
-                            fullUrl(song.coverUrl),
-                            width: 60,
-                            height: 60,
-                            fit: BoxFit.cover,
+                        Text(
+                          s.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                song.title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              Text(
-                                song.artist,
-                                style: const TextStyle(color: Colors.white60),
-                              ),
-                            ],
+                        Text(
+                          s.artist,
+                          style: const TextStyle(
+                            color: Colors.white60,
+                            fontSize: 14,
                           ),
-                        ),
-                        const Icon(
-                          Icons.play_circle_fill,
-                          color: Colors.white70,
-                          size: 36,
                         ),
                       ],
                     ),
                   ),
-                ),
-              );
-            },
-          ),
 
-          const Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: MiniPlayer(),
-          ),
-        ],
+                  // ❤️ Remove
+                  IconButton(
+                    icon: const Icon(Icons.favorite, color: Colors.redAccent),
+                    onPressed: () async {
+                      await fav.removeFavorite(
+                        userId: auth.userId!,
+                        songId: s.id,
+                        token: auth.token!,
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("💔 Đã bỏ yêu thích \"${s.title}\"")),
+                      );
+                    },
+                  ),
+
+                  // ▶️ Play
+                  IconButton(
+                    icon: const Icon(Icons.play_circle_fill,
+                        color: Colors.greenAccent, size: 36),
+                    onPressed: () => _playSong(
+                      song: s,
+                      playlist: songs,
+                      index: index,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
+
+      bottomNavigationBar: const MiniPlayer(),
     );
   }
 }

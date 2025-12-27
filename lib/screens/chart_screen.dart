@@ -270,107 +270,121 @@ class _ChartScreenState extends State<ChartScreen> {
     );
   }
 
-  // ==================== LIST RANKING ====================
+  // ==================== LIST RANKING (NEW UI STYLE) ====================
   Widget _buildList(List<ChartSong> charts) {
     final player = context.read<PlayerProvider>();
-    final fav = context.read<FavoriteProvider>();
+    final fav = context.watch<FavoriteProvider>();
 
-    final playlist = charts.map((c) {
-      return Song(
-        id: c.songId,
-        title: c.title,
-        artist: c.artist,
-        coverUrl: c.coverUrl,
-        audioUrl: c.audioUrl ?? "",
-        duration: c.duration,
-        views: c.viewCount,
-        artistId: c.artistId,
-        isFavorite: fav.isFavorite(c.songId),
-      );
-    }).toList();
+    // Chuẩn hóa playlist từ charts
+    final playlist = charts.map((c) => Song(
+      id: c.songId,
+      title: c.title,
+      artist: c.artist,
+      coverUrl: c.coverUrl,
+      audioUrl: c.audioUrl ?? "",
+      duration: c.duration,
+      views: c.viewCount,
+      artistId: c.artistId,
+      isFavorite: fav.isFavorite(c.songId),
+    )).toList();
 
-    return ListView.builder(
-      padding: const EdgeInsets.only(bottom: 90, top: 10),
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(14, 8, 14, 90),
       itemCount: playlist.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (_, i) {
         final s = playlist[i];
         final c = charts[i];
 
+        // Xử lý icon lên / xuống / giữ nguyên
         int? diff = (c.prevRank != null) ? c.prevRank! - c.rank : null;
 
-        Icon arrow;
-        if (diff == null) {
-          arrow = const Icon(Icons.remove, color: Colors.white38, size: 16);
-        } else if (diff > 0) {
-          arrow = const Icon(Icons.arrow_upward,
-              color: Colors.greenAccent, size: 16);
-        } else if (diff < 0) {
-          arrow =
-          const Icon(Icons.arrow_downward, color: Colors.redAccent, size: 16);
-        } else {
-          arrow = const Icon(Icons.remove, color: Colors.white38, size: 16);
+        Icon arrow = const Icon(Icons.remove, color: Colors.white24, size: 16);
+        if (diff != null && diff > 0) {
+          arrow = const Icon(Icons.arrow_upward, color: Colors.greenAccent, size: 16);
+        } else if (diff != null && diff < 0) {
+          arrow = const Icon(Icons.arrow_downward, color: Colors.redAccent, size: 16);
         }
 
-        return GestureDetector(
+        return InkWell(
+          borderRadius: BorderRadius.circular(18),
           onTap: () {
             player.playSong(song: s, playlist: playlist, index: i);
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) =>
-                    SongDetailScreen(song: s, playlist: playlist, index: i),
+                builder: (_) => SongDetailScreen(song: s, playlist: playlist, index: i),
               ),
             );
           },
           child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(18),
+              color: Colors.white.withOpacity(0.06),
             ),
             child: Row(
               children: [
+                // 🎖 Rank Number
                 Text(
                   "${c.rank}",
                   style: const TextStyle(
-                      color: Colors.greenAccent,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold),
+                    color: Colors.greenAccent,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 14),
+
+                // 🎵 Cover
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(12),
                   child: Image.network(
                     fullUrl(s.coverUrl),
-                    width: 48,
-                    height: 48,
+                    width: 65,
+                    height: 65,
                     fit: BoxFit.cover,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 14),
+
+                // 📌 Info
                 Expanded(
                   child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(s.title,
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600)),
-                        Text(s.artist,
-                            style: const TextStyle(color: Colors.white54)),
-                      ]),
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        s.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        s.artist,
+                        style: const TextStyle(color: Colors.white60, fontSize: 14),
+                      ),
+                    ],
+                  ),
                 ),
-                arrow,
-                if (diff != null && diff != 0)
-                  Text(
-                    diff.abs().toString(),
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color:
-                      diff > 0 ? Colors.greenAccent : Colors.redAccent,
-                    ),
-                  )
+
+                // 📈 Rank Movement
+                Row(
+                  children: [
+                    arrow,
+                    if (diff != null && diff != 0)
+                      Text(
+                        diff.abs().toString(),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: diff > 0 ? Colors.greenAccent : Colors.redAccent,
+                        ),
+                      ),
+                  ],
+                ),
               ],
             ),
           ),

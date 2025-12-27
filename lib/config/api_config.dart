@@ -18,6 +18,8 @@ class ApiConfig {
   static const String userAvatarBaseUrl =
       "$serverUrl/uploads/avatars";
 
+  static const String updateUser = "$serverUrl/api/auth/update";
+
   // ================= ARTISTS =================
   static const String artists = "$baseUrl/artists";
 
@@ -83,4 +85,11 @@ class ApiConfig {
   static String getChart(String type) =>
       "$baseUrl/charts/$type";
 
+  //================== PLAYLIST ==================
+  static const playlistList = "$serverUrl/api/playlist/list";
+  static const playlistDetail = "$serverUrl/api/playlist";
+  static const playlistCreate = "$serverUrl/api/playlist/create";
+  static const playlistAddSong = "$serverUrl/api/playlist/add-song";
+  static const playlistDelete = "$serverUrl/api/playlist/delete"; 
+  static const playlistRemoveSong = "$serverUrl/api/playlist/remove-song";
 }

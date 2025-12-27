@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
+import '../models/song.dart';
 import '../services/favorite_service.dart';
 
 class FavoriteProvider extends ChangeNotifier {
   final Set<int> _favoriteSongIds = {};
+  final List<Song> _favoriteSongs = [];
+
+  // ===== GETTERS =====
+  Set<int> get ids => _favoriteSongIds;
+  List<Song> get songs => List.unmodifiable(_favoriteSongs);
 
   bool isFavorite(int songId) => _favoriteSongIds.contains(songId);
 
-  Set<int> get ids => _favoriteSongIds;
+  int get favoritesCount => _favoriteSongIds.length;
 
-  /// 🔄 Load favorites
+
+  // ===== LOAD FAVORITES =====
   Future<void> loadFavorites({
     required int userId,
     required String token,
@@ -20,26 +27,33 @@ class FavoriteProvider extends ChangeNotifier {
       ..clear()
       ..addAll(songs.map((e) => e.id));
 
+    _favoriteSongs
+      ..clear()
+      ..addAll(songs);
+
     notifyListeners();
   }
 
-  /// ❤️ ADD
+  // ===== ADD FAVORITE =====
   Future<void> addFavorite({
     required int userId,
-    required int songId,
+    required Song song,
     required String token,
   }) async {
     await FavoriteService.addFavorite(
       userId: userId,
-      songId: songId,
+      songId: song.id,
       token: token,
     );
 
-    _favoriteSongIds.add(songId);
-    notifyListeners();
+    if (!_favoriteSongIds.contains(song.id)) {
+      _favoriteSongIds.add(song.id);
+      _favoriteSongs.add(song);
+      notifyListeners();
+    }
   }
 
-  /// ❌ REMOVE
+  // ===== REMOVE FAVORITE =====
   Future<void> removeFavorite({
     required int userId,
     required int songId,
@@ -52,11 +66,27 @@ class FavoriteProvider extends ChangeNotifier {
     );
 
     _favoriteSongIds.remove(songId);
+    _favoriteSongs.removeWhere((s) => s.id == songId);
+
     notifyListeners();
   }
 
+  // ===== CLEAR (logout) =====
   void clear() {
     _favoriteSongIds.clear();
+    _favoriteSongs.clear();
     notifyListeners();
+  }
+
+  Future<void> toggleFavorite({
+    required int userId,
+    required Song song,
+    required String token,
+  }) async {
+    if (isFavorite(song.id)) {
+      await removeFavorite(userId: userId, songId: song.id, token: token);
+    } else {
+      await addFavorite(userId: userId, song: song, token: token);
+    }
   }
 }

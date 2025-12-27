@@ -5,7 +5,6 @@ import 'favorite_songs_screen.dart';
 import 'profile_screen.dart';
 import 'chart_screen.dart';
 
-
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -16,20 +15,36 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  late final List<Widget> _screens;
+  // 🔑 KEY để ép rebuild Trang chủ
+  Key _homeKey = UniqueKey();
+
+  late List<Widget> _screens;
 
   @override
   void initState() {
     super.initState();
-    _screens = const [
-      SongListScreen(),        // 🏠 Trang chủ
-      FavoriteSongsScreen(),   // ❤️ Yêu thích
-      ChartScreen(),        // 📊 BXH
-      ProfileScreen(),         // 👤 Cá nhân
+    _buildScreens();
+  }
+
+  void _buildScreens() {
+    _screens = [
+      SongListScreen(key: _homeKey), // 🏠 Trang chủ
+      const FavoriteSongsScreen(),   // ❤️ Yêu thích
+      const ChartScreen(),           // 📊 BXH
+      const ProfileScreen(),         // 👤 Cá nhân
     ];
   }
 
   void _onTabChanged(int index) {
+    // 👉 Nếu đang ở Trang chủ và bấm lại Trang chủ
+    if (_currentIndex == index && index == 0) {
+      setState(() {
+        _homeKey = UniqueKey(); // 🔥 ép rebuild
+        _buildScreens();
+      });
+      return;
+    }
+
     setState(() => _currentIndex = index);
   }
 

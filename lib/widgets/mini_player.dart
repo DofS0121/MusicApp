@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../models/song.dart';
 import '../providers/player_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/favorite_provider.dart';
@@ -13,54 +14,15 @@ class MiniPlayer extends StatelessWidget {
 
   String fullUrl(String path) => "${ApiConfig.serverUrl}$path";
 
-  /// ❤️ ADD FAVORITE – QUA FAVORITE PROVIDER
-  Future<void> _toggleFavorite(BuildContext context) async {
-    final auth = context.read<AuthProvider>();
-    final fav = context.read<FavoriteProvider>();
-    final player = context.read<PlayerProvider>();
-    final song = player.currentSong;
-
-    if (song == null) return;
-
-    if (!auth.isAuthenticated ||
-        auth.userId == null ||
-        auth.token == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("⚠️ Vui lòng đăng nhập")),
-      );
-      return;
-    }
-
-    // ⛔ đã yêu thích thì không add lại (chưa làm remove)
-    if (fav.isFavorite(song.id)) return;
-
-    try {
-      await fav.addFavorite(
-        userId: auth.userId!,
-        songId: song.id,
-        token: auth.token!,
-      );
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("❤️ Đã thêm vào yêu thích")),
-      );
-    } catch (e) {
-      debugPrint("❌ ADD FAVORITE ERROR: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("❌ Lỗi khi lưu yêu thích")),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Consumer3<PlayerProvider, FavoriteProvider, AuthProvider>(
       builder: (_, player, fav, auth, __) {
-        final song = player.currentSong;
+        final Song? song = player.currentSong;
 
-        if (song == null) return const SizedBox();
+        if (song == null) return const SizedBox.shrink();
 
-        final isFavorite = fav.isFavorite(song.id);
+        final bool isFavorite = fav.isFavorite(song.id);
 
         return GestureDetector(
           onTap: () {
@@ -89,7 +51,7 @@ class MiniPlayer extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    // 🎧 COVER
+                    /// 🎧 COVER
                     ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Image.network(
@@ -97,11 +59,13 @@ class MiniPlayer extends StatelessWidget {
                         width: 48,
                         height: 48,
                         fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                        const Icon(Icons.music_note, color: Colors.white70),
                       ),
                     ),
                     const SizedBox(width: 12),
 
-                    // 🎵 INFO
+                    /// 🎵 INFO
                     Expanded(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -129,40 +93,44 @@ class MiniPlayer extends StatelessWidget {
                       ),
                     ),
 
-                    /// ❤️ FAVORITE (ĐỒNG BỘ)
-                    Consumer<FavoriteProvider>(
-                      builder: (_, fav, __) {
-                        final isFav = fav.isFavorite(song.id);
+                    /// ❤️ FAVORITE (FIX ĐÚNG LOGIC)
+                    IconButton(
+                      icon: Icon(
+                        isFavorite
+                            ? Icons.favorite
+                            : Icons.favorite_border,
+                      ),
+                      color: isFavorite ? Colors.red : Colors.white70,
+                      iconSize: 22,
+                      onPressed: () async {
+                        if (!auth.isAuthenticated ||
+                            auth.userId == null ||
+                            auth.token == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("⚠️ Vui lòng đăng nhập"),
+                            ),
+                          );
+                          return;
+                        }
 
-                        return IconButton(
-                          icon: Icon(
-                            isFav ? Icons.favorite : Icons.favorite_border,
-                          ),
-                          color: isFav ? Colors.red : Colors.white70,
-                          iconSize: 22,
-                          onPressed: () async {
-                            final auth = context.read<AuthProvider>();
-                            if (!auth.isAuthenticated) return;
-
-                            if (isFav) {
-                              await fav.removeFavorite(
-                                userId: auth.userId!,
-                                songId: song.id,
-                                token: auth.token!,
-                              );
-                            } else {
-                              await fav.addFavorite(
-                                userId: auth.userId!,
-                                songId: song.id,
-                                token: auth.token!,
-                              );
-                            }
-                          },
-                        );
+                        if (isFavorite) {
+                          await fav.removeFavorite(
+                            userId: auth.userId!,
+                            songId: song.id,
+                            token: auth.token!,
+                          );
+                        } else {
+                          await fav.addFavorite(
+                            userId: auth.userId!,
+                            song: song, // 🔥 TRUYỀN SONG ĐẦY ĐỦ
+                            token: auth.token!,
+                          );
+                        }
                       },
                     ),
 
-                    // ▶️ PLAY / PAUSE
+                    /// ▶️ PLAY / PAUSE
                     IconButton(
                       icon: Icon(
                         player.isPlaying
@@ -174,7 +142,7 @@ class MiniPlayer extends StatelessWidget {
                       onPressed: player.togglePlay,
                     ),
 
-                    // ❌ CLOSE
+                    /// ❌ CLOSE
                     IconButton(
                       icon: const Icon(
                         Icons.close,
