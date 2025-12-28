@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'song_list_screen.dart';
-import 'favorite_songs_screen.dart';
-import 'profile_screen.dart';
+import 'favorite_screen.dart';
+import 'user/profile_screen.dart';
 import 'chart_screen.dart';
 
 class MainScreen extends StatefulWidget {
@@ -29,7 +29,7 @@ class _MainScreenState extends State<MainScreen> {
   void _buildScreens() {
     _screens = [
       SongListScreen(key: _homeKey), // 🏠 Trang chủ
-      const FavoriteSongsScreen(),   // ❤️ Yêu thích
+      const FavoriteScreen(),   // ❤️ Yêu thích
       const ChartScreen(),           // 📊 BXH
       const ProfileScreen(),         // 👤 Cá nhân
     ];

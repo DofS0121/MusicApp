@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart';
+import '../../services/auth_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -66,7 +66,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 child: loading
                     ? const CircularProgressIndicator(color: Colors.black)
                     : const Text(
-                  "CREATE ACCOUNT",
+                  "TẠO TÀI KHOẢN",
                   style: TextStyle(color: Colors.black),
                 ),
               ),

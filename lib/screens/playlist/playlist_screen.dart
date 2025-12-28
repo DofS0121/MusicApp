@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/playlist_service.dart';
-import '../models/playlist.dart';
+import '../../services/playlist_service.dart';
+import '../../models/playlist.dart';
 import 'playlist_detail_screen.dart';
-import '../providers/auth_provider.dart';
-import '../config/api_config.dart';
+import '../../providers/auth_provider.dart';
+import '../../config/api_config.dart';
 
 class PlaylistScreen extends StatefulWidget {
   const PlaylistScreen({super.key});

@@ -1,9 +1,9 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../models/artist_song.dart';
-import '../models/song_info.dart';
-import '../services/song_service.dart';
-import '../config/api_config.dart';
+import '../../models/artist_song.dart';
+import '../../models/song_info.dart';
+import '../../services/song_service.dart';
+import '../../config/api_config.dart';
 
 class SongInfoTab extends StatefulWidget {
   final int songId;

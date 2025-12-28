@@ -8,6 +8,8 @@ class Song {
   final int duration;
   int views;
   bool isFavorite;
+  // final String avatarUrl;
+
   Song({
     required this.id,
     required this.title,
@@ -18,6 +20,7 @@ class Song {
     required this.duration,
     required this.views,
     this.isFavorite = false,
+    // required this.avatarUrl,
 
   });
 
@@ -32,6 +35,7 @@ class Song {
       duration: json['duration'] ?? 0,
       views: json['views'] ?? 0,
       isFavorite: json['isFavorite'] ?? false,
+      // avatarUrl: json['avatarUrl'] ?? 0,
     );
   }
 

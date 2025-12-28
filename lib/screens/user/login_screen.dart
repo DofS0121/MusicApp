@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/auth_service.dart';
-import '../providers/auth_provider.dart';
-import '../providers/favorite_provider.dart';
-import 'song_list_screen.dart';
+import '../../services/auth_service.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/favorite_provider.dart';
 import 'register_screen.dart';
-import 'main_screen.dart'; // ✅ IMPORT MAIN SCREEN
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -90,7 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: loading
                     ? const CircularProgressIndicator(color: Colors.black)
                     : const Text(
-                  "LOGIN",
+                  "ĐĂNG NHẬP",
                   style: TextStyle(color: Colors.black),
                 ),
               ),
@@ -104,7 +102,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 );
               },
               child: const Text(
-                "Create new account",
+                "Tạo tài khoản",
                 style: TextStyle(color: Colors.greenAccent),
               ),
             ),

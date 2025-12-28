@@ -20,6 +20,13 @@ class ApiConfig {
 
   static const String updateUser = "$serverUrl/api/auth/update";
 
+  static const String verifyPassword = "$baseUrl/auth/verify-password";
+  static const String sendOtp = "$baseUrl/auth/send-otp";
+  static const String verifyOtp = "$baseUrl/auth/verify-otp";
+  static const String changePassword = "$baseUrl/auth/change-password";
+  static const String getUserByEmail = "$baseUrl/auth/get-by-email";
+
+
   // ================= ARTISTS =================
   static const String artists = "$baseUrl/artists";
 
@@ -42,6 +49,17 @@ class ApiConfig {
   // base url avatar artist
   static const String artistAvatarBaseUrl =
       "$serverUrl/avatar_artist";
+
+  // ❤️ Follow / Unfollow nghệ sĩ
+  static String get followArtist => "$baseUrl/artists/follow";
+  static String get unfollowArtist => "$baseUrl/artists/unfollow";
+
+// ❓ Check đã follow chưa
+  static String isArtistFollowed(int artistId, int userId) =>
+      "$baseUrl/artists/$artistId/isFollowed?userId=$userId";
+
+  static String artistSongs(int id) =>
+      "$baseUrl/artists/$id/songs";
 
   // ================= SONGS =================
   static const String songs = "$baseUrl/songs";
@@ -66,6 +84,11 @@ class ApiConfig {
   // GET: /api/songs/search?q=abc
   static String searchSongs(String keyword) =>
       "$baseUrl/songs/search?q=$keyword";
+
+  // 🔍 Search artist
+  static String searchArtists(String keyword) =>
+      "$baseUrl/artists/search?query=$keyword";
+
 
   // ================= FAVORITES =================
   static const String addFavorite =

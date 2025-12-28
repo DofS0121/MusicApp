@@ -3,14 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
-import '../providers/auth_provider.dart';
-import '../providers/favorite_provider.dart';
-import '../services/auth_service.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/favorite_provider.dart';
+import '../../services/auth_service.dart';
 import 'auth_gate.dart';
-import '../providers/player_provider.dart';
-import '../config/api_config.dart';
-import '../screens/edit_profile_screen.dart';
-import '../screens/playlist_screen.dart';
+import '../../providers/player_provider.dart';
+import '../../config/api_config.dart';
+import 'edit_profile_screen.dart';
+import '../playlist/playlist_screen.dart';
+import '../change_password/verify_current_password_screen.dart';
 
 
 class ProfileScreen extends StatefulWidget {
@@ -199,13 +200,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             const SizedBox(height: 30),
 
-            /// 🔧 CÁC CHỨC NĂNG THÊM (gợi ý / mở rộng sau này)
-            _profileOption(Icons.history, "Lịch sử nghe nhạc",
-                onTap: () => debugPrint("👉 TODO: History")),
-            _profileOption(Icons.settings, "Cài đặt tài khoản",
-                onTap: () => debugPrint("👉 TODO: Settings")),
-            _profileOption(Icons.security, "Đổi mật khẩu",
-                onTap: () => debugPrint("👉 TODO: Change Password")),
+            _profileOption(Icons.security, "Đổi mật khẩu", onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const VerifyCurrentPasswordScreen()),
+              );
+            }),
+
 
             _profileOption(
               Icons.library_music,

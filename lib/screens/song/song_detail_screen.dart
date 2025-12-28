@@ -3,16 +3,17 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../models/song.dart';
-import '../providers/player_provider.dart';
-import '../providers/auth_provider.dart';
-import '../providers/favorite_provider.dart';
-import '../services/playlist_service.dart';
-import '../models/playlist.dart';
-import '../widgets/player_seek_bar.dart';
-import '../config/api_config.dart';
-import '../screens/song_info_tab.dart';
-import '../screens/lyrics_tab.dart';
+import '../../models/song.dart';
+import '../../providers/player_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/favorite_provider.dart';
+import '../../services/playlist_service.dart';
+import '../../models/playlist.dart';
+import '../../widgets/player_seek_bar.dart';
+import '../../config/api_config.dart';
+import 'song_info_tab.dart';
+import 'lyrics_tab.dart';
+import '../../screens/artist_detail_screen.dart';
 
 class SongDetailScreen extends StatefulWidget {
   final Song song;
@@ -203,7 +204,6 @@ class _SongDetailScreenState extends State<SongDetailScreen>
   }
 
   // ======================= BUILD UI =======================
-  // ======================= BUILD UI =======================
   @override
   Widget build(BuildContext context) {
     final player = context.watch<PlayerProvider>();
@@ -305,7 +305,10 @@ class _SongDetailScreenState extends State<SongDetailScreen>
         const SizedBox(height: 28),
 
         Text(song.title,
-            style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+            style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)
+        ),
+        const SizedBox(height: 4),
+
         Text(song.artist, style: const TextStyle(color: Colors.white70)),
 
         const SizedBox(height: 14),
@@ -316,7 +319,7 @@ class _SongDetailScreenState extends State<SongDetailScreen>
           children: [
             IconButton(
               icon: Icon(isFav ? Icons.favorite : Icons.favorite_border),
-              iconSize: 28,
+              iconSize: 30,
               color: isFav ? Colors.redAccent : Colors.white70,
               onPressed: () {
                 final auth = context.read<AuthProvider>();
@@ -339,8 +342,21 @@ class _SongDetailScreenState extends State<SongDetailScreen>
             IconButton(
               icon: const Icon(Icons.playlist_add),
               color: Colors.greenAccent,
-              iconSize: 28,
+              iconSize: 30,
               onPressed: () => _addToPlaylistDialog(song),
+            ),
+            const SizedBox(width: 14),
+            IconButton(
+              icon: const Icon(Icons.account_circle, color: Colors.greenAccent, size: 30),
+              tooltip: "Xem nghệ sĩ",
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ArtistDetailScreen(artistId: song.artistId),
+                  ),
+                );
+              },
             ),
           ],
         ),

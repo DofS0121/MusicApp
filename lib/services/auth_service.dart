@@ -137,4 +137,64 @@ class AuthService {
       return null;
     }
   }
+
+  // ================= VERIFY CURRENT PASSWORD =================
+  Future<Map<String, dynamic>?> verifyCurrentPassword(int userId, String currentPassword) async {
+    try {
+      final res = await http.post(
+        Uri.parse(ApiConfig.verifyPassword),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"UserId": userId, "CurrentPassword": currentPassword}),
+      );
+      return jsonDecode(res.body);
+    } catch (e) {
+      print("🔴 [VERIFY PASSWORD ERROR] $e");
+      return null;
+    }
+  }
+
+// ================= SEND OTP =================
+  Future<bool> sendOtp(int userId) async {
+    try {
+      final res = await http.post(
+        Uri.parse(ApiConfig.sendOtp),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"UserId": userId}),
+      );
+      return res.statusCode == 200;
+    } catch (e) {
+      print("🔴 [SEND OTP ERROR] $e");
+      return false;
+    }
+  }
+
+// ================= VERIFY OTP =================
+  Future<bool> verifyOtp(int userId, String otp) async {
+    try {
+      final res = await http.post(
+        Uri.parse(ApiConfig.verifyOtp),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"UserId": userId, "OTP": otp}),
+      );
+      return jsonDecode(res.body)["success"] ?? false;
+    } catch (e) {
+      print("🔴 [VERIFY OTP ERROR] $e");
+      return false;
+    }
+  }
+
+// ================= CHANGE PASSWORD =================
+  Future<bool> changePassword(int userId, String newPassword) async {
+    try {
+      final res = await http.put(
+        Uri.parse(ApiConfig.changePassword),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"UserId": userId, "NewPassword": newPassword}),
+      );
+      return res.statusCode == 200;
+    } catch (e) {
+      print("🔴 [CHANGE PASSWORD ERROR] $e");
+      return false;
+    }
+  }
 }

@@ -7,9 +7,10 @@ import '../providers/player_provider.dart';
 import '../providers/favorite_provider.dart';
 import '../models/chart_song.dart';
 import '../models/song.dart';
-import '../screens/song_detail_screen.dart';
+import 'song/song_detail_screen.dart';
 import '../widgets/mini_player.dart';
 import '../config/api_config.dart';
+import '../services/song_service.dart';
 
 class ChartScreen extends StatefulWidget {
   const ChartScreen({super.key});
@@ -20,6 +21,7 @@ class ChartScreen extends StatefulWidget {
 
 class _ChartScreenState extends State<ChartScreen> {
   late PageController _pageController;
+  final SongService _songService = SongService();
   int startIndex = 300; // ⭐ tăng để loop tự nhiên
   Timer? _autoSlideTimer;
   int _currentPage = 0;
@@ -43,6 +45,26 @@ class _ChartScreenState extends State<ChartScreen> {
         curve: Curves.easeOutCubic,
       );
     });
+  }
+
+  Future<void> _playAndIncreaseView(Song song, List<Song> playlist, int index) async {
+    final player = context.read<PlayerProvider>();
+
+    if (player.currentSong?.id != song.id) {
+      try {
+        song.views = await _songService.increaseView(song.id);
+        setState(() {}); // cập nhật view
+      } catch (_) {}
+    }
+
+    player.playSong(song: song, playlist: playlist, index: index);
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SongDetailScreen(song: song, playlist: playlist, index: index),
+      ),
+    );
   }
 
   @override
@@ -189,7 +211,7 @@ class _ChartScreenState extends State<ChartScreen> {
                   // Lấy index thực của bài trong playlist
                   final realIndex = fullPlaylist.indexWhere((s) => s.id == song.id);
 
-                  player.playSong(song: song, playlist: fullPlaylist, index: realIndex);
+                  _playAndIncreaseView(song, fullPlaylist, realIndex);
 
                   Navigator.push(
                     context,
@@ -308,15 +330,7 @@ class _ChartScreenState extends State<ChartScreen> {
 
         return InkWell(
           borderRadius: BorderRadius.circular(18),
-          onTap: () {
-            player.playSong(song: s, playlist: playlist, index: i);
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => SongDetailScreen(song: s, playlist: playlist, index: i),
-              ),
-            );
-          },
+          onTap: () => _playAndIncreaseView(s, playlist, i),
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -325,66 +339,30 @@ class _ChartScreenState extends State<ChartScreen> {
             ),
             child: Row(
               children: [
-                // 🎖 Rank Number
-                Text(
-                  "${c.rank}",
-                  style: const TextStyle(
-                    color: Colors.greenAccent,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                Text("${c.rank}", style: const TextStyle(color: Colors.greenAccent, fontSize: 20, fontWeight: FontWeight.bold)),
                 const SizedBox(width: 14),
-
-                // 🎵 Cover
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    fullUrl(s.coverUrl),
-                    width: 65,
-                    height: 65,
-                    fit: BoxFit.cover,
-                  ),
+                  child: Image.network(fullUrl(s.coverUrl), width: 65, height: 65, fit: BoxFit.cover),
                 ),
                 const SizedBox(width: 14),
-
-                // 📌 Info
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        s.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      Text(
-                        s.artist,
-                        style: const TextStyle(color: Colors.white60, fontSize: 14),
-                      ),
+                      Text(s.title, maxLines: 1, overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700)),
+                      Text(s.artist, style: const TextStyle(color: Colors.white60, fontSize: 14)),
                     ],
                   ),
                 ),
-
-                // 📈 Rank Movement
-                Row(
-                  children: [
-                    arrow,
-                    if (diff != null && diff != 0)
-                      Text(
-                        diff.abs().toString(),
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: diff > 0 ? Colors.greenAccent : Colors.redAccent,
-                        ),
-                      ),
-                  ],
-                ),
+                arrow,
+                if (diff != null && diff != 0)
+                  Text(diff.abs().toString(),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: diff > 0 ? Colors.greenAccent : Colors.redAccent,
+                      )),
               ],
             ),
           ),

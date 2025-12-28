@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
-import '../providers/auth_provider.dart';
-import '../services/auth_service.dart';
-import '../providers/favorite_provider.dart';
-import '../config/api_config.dart';
+import '../../providers/auth_provider.dart';
+import '../../services/auth_service.dart';
+import '../../providers/favorite_provider.dart';
+import '../../config/api_config.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});

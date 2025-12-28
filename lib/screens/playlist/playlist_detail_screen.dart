@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/playlist_service.dart';
-import '../services/song_service.dart';
-import '../models/song.dart';
-import '../models/playlist.dart';
-import '../config/api_config.dart';
-import '../providers/player_provider.dart';
-import '../providers/auth_provider.dart';
-import 'song_detail_screen.dart';
+import '../../services/playlist_service.dart';
+import '../../services/song_service.dart';
+import '../../models/song.dart';
+import '../../models/playlist.dart';
+import '../../config/api_config.dart';
+import '../../providers/player_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../song/song_detail_screen.dart';
 import 'playlist_add_song_screen.dart';
-import '../widgets/mini_player.dart';
+import '../../widgets/mini_player.dart';
 
 class PlaylistDetailScreen extends StatefulWidget {
   final int playlistId;
@@ -203,14 +203,15 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
           const Divider(color: Colors.white10),
 
           /// 🎵 SONG LIST
+          /// 🎵 SONG LIST (UI GIỐNG SONG_LIST_SCREEN)
           if (!isEmpty)
             Expanded(
               child: ListView.builder(
-                padding: const EdgeInsets.only(bottom: 140),
+                padding: const EdgeInsets.fromLTRB(14, 8, 14, 140),
                 itemCount: songs.length,
                 itemBuilder: (_, i) {
                   final s = songs[i];
-                  final playing = player.currentSong?.id == s.id;
+                  final isPlaying = player.currentSong?.id == s.id;
 
                   return Dismissible(
                     key: ValueKey(s.id),
@@ -218,23 +219,95 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                     background: Container(
                       alignment: Alignment.centerRight,
                       padding: const EdgeInsets.symmetric(horizontal: 20),
-                      color: Colors.redAccent.withOpacity(0.25),
+                      margin: const EdgeInsets.only(bottom: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.redAccent.withOpacity(0.22),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
                       child: const Icon(Icons.delete_forever, color: Colors.redAccent, size: 30),
                     ),
                     onDismissed: (_) => removeSong(s.id, s.title),
 
-                    child: ListTile(
-                      tileColor: playing ? Colors.greenAccent.withOpacity(0.12) : null,
-                      leading: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          "${ApiConfig.serverUrl}${s.coverUrl}",
-                          width: 55, height: 55, fit: BoxFit.cover,
+                    child: InkWell(
+                      onTap: () => playSong(i),
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(18),
+                          color: isPlaying
+                              ? Colors.greenAccent.withOpacity(0.12)
+                              : Colors.white.withOpacity(0.05),
+                        ),
+                        child: Row(
+                          children: [
+                            // 📌 COVER
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.network(
+                                "${ApiConfig.serverUrl}${s.coverUrl}",
+                                width: 65,
+                                height: 65,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) =>
+                                const Icon(Icons.music_note, size: 50, color: Colors.white54),
+                              ),
+                            ),
+
+                            const SizedBox(width: 14),
+
+                            // 📌 INFO
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    s.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  Text(
+                                    s.artist,
+                                    style: const TextStyle(
+                                      color: Colors.white60,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+
+                                  Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.headphones,
+                                        size: 16,
+                                        color: Colors.white60,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        "${s.views} lượt nghe",
+                                        style: const TextStyle(
+                                          color: Colors.white60,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            const Icon(
+                              Icons.play_circle_fill,
+                              color: Colors.greenAccent,
+                              size: 36,
+                            ),
+                          ],
                         ),
                       ),
-                      title: Text(s.title, style: const TextStyle(color: Colors.white)),
-                      subtitle: Text(s.artist, style: const TextStyle(color: Colors.white54)),
-                      onTap: () => playSong(i),
                     ),
                   );
                 },

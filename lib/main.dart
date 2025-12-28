@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:music_player_app/screens/playlist_add_song_screen.dart';
+import 'package:music_player_app/screens/playlist/playlist_add_song_screen.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/auth_provider.dart';
 import 'providers/player_provider.dart';
 import 'providers/favorite_provider.dart';
 import 'providers/chart_provider.dart';
-import 'screens/auth_gate.dart';
+import 'screens/user/auth_gate.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 void main() {

@@ -7,7 +7,7 @@ import '../providers/player_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/favorite_provider.dart';
 import '../config/api_config.dart';
-import '../screens/song_detail_screen.dart';
+import '../screens/song/song_detail_screen.dart';
 
 class MiniPlayer extends StatelessWidget {
   const MiniPlayer({super.key});

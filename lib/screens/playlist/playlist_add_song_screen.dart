@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../services/song_service.dart';
-import '../services/playlist_service.dart';
-import '../models/song.dart';
-import '../config/api_config.dart';
+import '../../services/song_service.dart';
+import '../../services/playlist_service.dart';
+import '../../models/song.dart';
+import '../../config/api_config.dart';
 
 class PlaylistAddSongScreen extends StatefulWidget {
   final int playlistId;

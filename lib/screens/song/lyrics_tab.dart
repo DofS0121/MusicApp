@@ -1,9 +1,9 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../config/api_config.dart';
-import '../services/player_service.dart';
-import '../services/lyrics_service.dart';
+import '../../config/api_config.dart';
+import '../../services/player_service.dart';
+import '../../services/lyrics_service.dart';
 
 class LyricsTab extends StatefulWidget {
   final int songId;
